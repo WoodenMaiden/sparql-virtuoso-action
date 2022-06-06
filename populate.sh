@@ -6,7 +6,12 @@ QUERY='SPARQL\n'
 GRAPH=''
 
 echo "Launching first instance for data filling"
-/opt/virtuoso-opensource/bin/virtuoso-t +wait
+docker run -e DBA_PASSWORD="$DBA_PASSWORD" \
+    -e DAV_PASSWORD="$DAV_PASSWORD" \
+    -v "$(pwd)":/database \
+    --name virtuoso -d \
+    database:latest \
+    /opt/virtuoso-opensource/bin/virtuoso-t +wait
 
 pid=$(ps -aux | grep '/opt/virtuoso-opensource/bin/virtuoso-t +wait' | awk '{print $2}')
 echo "First instance launch in backgroung with PID $pid"
@@ -48,13 +53,14 @@ then
             fi
         fi
     done < $1
-    QUERY=$QUERY"EXIT;\n"
+    QUERY=$QUERY"EXIT;\nshutdown;\n"
     echo "Finished reading file, now injecting query..."
-    printf "$QUERY" | isql -P "$DBA_PASSWORD" > /dev/null
+    printf  "printf \"$QUERY\" | isql -P \"$DBA_PASSWORD\" > /dev/null && exit" | docker exec -ti virtuoso sh #stderr: the input device is not a TTY
+    
+    docker stop virtuoso
+    docker commit virtuoso database:latest
+    docker rm -f virtuoso
     echo "Query sucessfully injected!"
-
-    printf "shutdown;\n" | isql -P "$DBA_PASSWORD" > /dev/null
- 
 else 
     echo 'No files provided'
 fi
