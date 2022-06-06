@@ -1,0 +1,25 @@
+name: 'Virtuoso sparql'
+description: 'Spawn a virtuoso instace and fill it with data!'
+inputs:
+  dba_password:
+    description: 'ENV variable DBA_PASSWORD'
+    required: false
+    default: 'password'
+  dav_password:
+    description: 'ENV variable DAV_PASSWORD'
+    required: false
+    default: 'password'
+  triples:
+    description: 'Files and and directories to import triples from, supports CSV'
+    required: false
+    default: '' # TBD, maybe ?
+#outputs:
+#  time: # id of output
+#    description: 'The time we greeted you'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.dba_password }}
+    - ${{ inputs.dav_password }}
+    - ${{ inputs.triples }}
