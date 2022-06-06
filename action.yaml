@@ -1,5 +1,10 @@
 name: 'Virtuoso sparql'
+author: Yann POMIE
+branding:
+  color: blue
+  icon: database
 description: 'Spawn a virtuoso instace and fill it with data!'
+
 inputs:
   dba_password:
     description: 'ENV variable DBA_PASSWORD'
