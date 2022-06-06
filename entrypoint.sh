@@ -16,4 +16,4 @@ then
 fi
 
 echo "Launching the instance"
-/opt/virtuoso-opensource/bin/virtuoso-t -f 
+/opt/virtuoso-opensource/bin/virtuoso-t
