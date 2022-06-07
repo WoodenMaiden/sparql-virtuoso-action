@@ -26,5 +26,7 @@ docker run -e DBA_PASSWORD="$DBA_PASSWORD" \
     -e DAV_PASSWORD="$DAV_PASSWORD" \
     -v "$(pwd)":/database -d \
     --name virtuoso \
+    -p 1111:1111 \
+    -p 8890:8890 \
     database:latest \
     /opt/virtuoso-opensource/bin/virtuoso-t +foreground
