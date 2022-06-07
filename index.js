@@ -7,11 +7,11 @@ try {
     const triples = core.getInput('triples');
 
     exec(`./entrypoint.sh ${dba_password} ${dav_password} ${triples}`, (error, stdout, stderr) => {
-        if (error) throw error;
+        if (error) throw [ error, stdout, stderr ];
 
         core.setOutput(stdout)
     })
 
 } catch (error) {
-    core.setFailed(`exec error: ${error}`);
+    core.setFailed(`error: ${error}\nstdout: ${stdout}\nstderr: ${stderr}`);
 }
