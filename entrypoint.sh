@@ -2,6 +2,12 @@
 
 set -e 
 
+# if [[ ! -f virtuoso.ini ]]; then
+
+# fi
+
+ls -a
+
 export DBA_PASSWORD="$1"
 export DAV_PASSWORD="$2"
 
