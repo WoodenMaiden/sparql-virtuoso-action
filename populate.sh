@@ -16,12 +16,13 @@ docker run -e DBA_PASSWORD="$DBA_PASSWORD" \
 pid=$(ps -aux | grep '/opt/virtuoso-opensource/bin/virtuoso-t +wait' | awk '{print $2}')
 echo "First instance launch in backgroung with PID $pid"
 echo $1
+
 if [ -e $1 ]
 then
     echo "Reading file $1..."
     while IFS= read -r line; do
-        entryGraph=$(echo $line | awk -F '\,\ ' '{print $2}')
-        entry=$(echo $line | awk -F '\,\ ' '{print $1}')
+        entryGraph=$(echo $line | awk -F ', ' '{print $2}')
+        entry=$(echo $line | awk -F ', ' '{print $1}')
         if [ -z "$entryGraph" ]
         then 
             GRAPH=$entry
@@ -29,9 +30,9 @@ then
         else
             if [ -z "$GRAPH" ]
             then
-                s=$(echo $line | awk -F '\,\ ' '{print $1}')
-                p=$(echo $line | awk -F '\,\ ' '{print $2}')
-                o=$(echo $line | awk -F '\,\ ' '{print $3}')
+                s=$(echo $line | awk -F ', ' '{print $1}')
+                p=$(echo $line | awk -F ', ' '{print $2}')
+                o=$(echo $line | awk -F ', ' '{print $3}')
 
                 if [ -z "$(echo $o | grep -Eo '[a-zA-Z0-9]+://[a-zA-Z0-9./?=_%:-]*')" ] 
                 then 
@@ -40,9 +41,9 @@ then
                     QUERY=$QUERY"INSERT DATA { <$s> <$p> <$o> };\n"
                 fi
             else 
-                s=$(echo $line | awk -F '\,\ ' '{print $1}')
-                p=$(echo $line | awk -F '\,\ ' '{print $2}')
-                o=$(echo $line | awk -F '\,\ ' '{print $3}')
+                s=$(echo $line | awk -F ', ' '{print $1}')
+                p=$(echo $line | awk -F ', ' '{print $2}')
+                o=$(echo $line | awk -F ', ' '{print $3}')
 
                 if [ -z "$(echo $o | grep -Eo '[a-zA-Z0-9]+://[a-zA-Z0-9./?=_%:-]*')" ] 
                 then 
@@ -55,7 +56,7 @@ then
     done < $1
     QUERY=$QUERY"EXIT;\nshutdown;\n"
     echo "Finished reading file, now injecting query..."
-    printf  "printf \"$QUERY\" | isql -P \"$DBA_PASSWORD\" > /dev/null && exit" | docker exec -ti virtuoso sh #stderr: the input device is not a TTY
+    printf  "printf \"$QUERY\" | isql -P \"$DBA_PASSWORD\" > /dev/null && exit" | docker exec  virtuoso sh 
     
     docker stop virtuoso
     docker commit virtuoso database:latest
