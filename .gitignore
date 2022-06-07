@@ -5,3 +5,9 @@
 *.xml
 *.ttl
 *.rdf
+
+*.lck
+*.db
+*.log
+*.pxa
+*.trx
