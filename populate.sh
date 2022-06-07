@@ -5,14 +5,6 @@ set -e
 QUERY='SPARQL\n'
 GRAPH=''
 
-echo "Launching first instance for data filling"
-docker run -e DBA_PASSWORD="$DBA_PASSWORD" \
-    -e DAV_PASSWORD="$DAV_PASSWORD" \
-    -v "$(pwd)":/database \
-    --name virtuoso -d \
-    database:latest \
-    /opt/virtuoso-opensource/bin/virtuoso-t +wait +foreground 
-
 if [ -e $1 ]
 then
     echo "Reading file $1..."
@@ -54,9 +46,6 @@ then
     echo "Finished reading files, now injecting query..."
     printf  "printf \"$QUERY\" | isql -P \"$DBA_PASSWORD\" > /dev/null && exit" | docker exec virtuoso sh 
     
-    docker stop virtuoso
-    docker commit virtuoso database:latest
-    docker rm -f virtuoso
     echo "Query sucessfully injected!"
 else 
     echo 'Could not read file'
