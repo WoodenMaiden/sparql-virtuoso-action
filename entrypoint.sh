@@ -2,12 +2,8 @@
 
 set -e 
 
-#echo "$1" > /settings/dba_password
-#echo "$2" > /settings/dav_password
-
 export DBA_PASSWORD="$1"
 export DAV_PASSWORD="$2"
-#export START_COMMAND="docker run virtuoso"
 
 
 docker run -e DBA_PASSWORD="$DBA_PASSWORD" \
@@ -28,6 +24,7 @@ fi
 echo "Launching the instance"
 docker run -e DBA_PASSWORD="$DBA_PASSWORD" \
     -e DAV_PASSWORD="$DAV_PASSWORD" \
-    -v "$(pwd)":/database \
+    -v "$(pwd)":/database -d \
+    --name virtuoso \
     database:latest \
-    /opt/virtuoso-opensource/bin/virtuoso-t
+    /opt/virtuoso-opensource/bin/virtuoso-t +foreground
