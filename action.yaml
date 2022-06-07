@@ -18,13 +18,7 @@ inputs:
     description: 'Files and and directories to import triples from, supports CSV'
     required: false
     default: '' # TBD, maybe ?
-#outputs:
-#  time: # id of output
-#    description: 'The time we greeted you'
+
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  args:
-    - ${{ inputs.dba_password }}
-    - ${{ inputs.dav_password }}
-    - ${{ inputs.triples }}
+  using: 'node16'
+  main: 'index.js'
