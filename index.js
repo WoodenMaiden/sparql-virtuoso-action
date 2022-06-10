@@ -7,11 +7,13 @@ const Dockerode = require("dockerode");
 const Filler = require('./fillData');
 
 
-async function bootstrap() {
+(async function bootstrap() {
+    "use strict"
+
     try {
-        const dba_password = core.getInput('dba_password');
+        const dba_password = "password" //core.getInput('dba_password');
         const dav_password = core.getInput('dav_password');
-        const triplesInput = core.getInput('triples');
+        const triplesInput = "_triples.csv"//core.getInput('triples');
     
         if (!fs.existsSync('./virtuoso.ini')) throw './virtuoso.ini is missing';
     
@@ -64,5 +66,5 @@ async function bootstrap() {
     } catch (error) {
         core.setFailed(error);
     }
-}
-bootstrap()
+
+})()
