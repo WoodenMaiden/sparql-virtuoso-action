@@ -7,16 +7,31 @@ const Dockerode = require("dockerode");
 const Filler = require('./fillData');
 
 
+// watches the container stdout and wait for the ready string to be printed
+function waitForVirtuosoInit(stream) {
+    return new Promise((resolve, reject) => {
+        stream.on('error', (data) => reject(data.toString()))
+        stream.on('data', (data) => {
+            console.log(data.toString())
+            if (data.toString().includes('Server online at 1111')) {
+                resolve();
+            }
+        }) 
+        stream.on('end', () => { //just in case
+            console.log("Ended!")          
+            resolve();
+        })
+    });
+  }
+
 (async function bootstrap() {
     "use strict"
 
     try {
-        const dba_password = "password" //core.getInput('dba_password');
+        const dba_password = core.getInput('dba_password');
         const dav_password = core.getInput('dav_password');
-        const triplesInput = "_triples.csv"//core.getInput('triples');
-    
-        if (!fs.existsSync('./virtuoso.ini')) throw './virtuoso.ini is missing';
-    
+        const triplesInput = core.getInput('triples');
+        
         const docker = new Dockerode()
         
         try { // let's try to stop the container just in case...
@@ -28,28 +43,33 @@ const Filler = require('./fillData');
         await docker.pruneImages()
         await docker.pruneContainers()
         
-        await docker.buildImage({
-            context: __dirname,
-            src: ['Dockerfile', 'virtuoso.ini']
-          }, {
-            t: "database"
-        })
-        
         const container = await docker.createContainer({
             name: "virtuosoaction", 
-            Env: [`DBA_PASSWORD=${dba_password}`, `DAV_PASSWORD=${dba_password}`],
-            Image: "database",
-            Entrypoint: ['/virtuoso-entrypoint.sh'],
+            Env: [`DBA_PASSWORD=${dba_password}`, `DAV_PASSWORD=${dav_password}`],
+            Image: "openlink/virtuoso-opensource-7",
+            Tty: false,
+            AttachStdout: true,
             Cmd: ['start'],
-            Tty: false
+            HostConfig: {
+                PortBindings: {
+                    "8890/tcp": [{
+                        HostPort: "8890"
+                    }],
+                    "1111/tcp": [{
+                        HostPort: "1111"
+                    }]
+                }
+            }
         })
         await container.start()
+        const stream = await container.attach({stream: true, stdout: true, stderr: true})
+        await waitForVirtuosoInit(stream)
 
         if (triplesInput && triplesInput.length !== 0) {
             const files = triplesInput.split(' ');
             const fillers = []
 
-            for(let i = 0; i< files.length; ++i) {
+            for(let i = 0; i < files.length; ++i) {
                 try {
                     const fileHandler = await fsp.open(files[i], 'r')
                     fillers.push(new Filler(fileHandler).sendData(container))
@@ -57,7 +77,7 @@ const Filler = require('./fillData');
                     console.log(e)
                 }
             }
-
+            console.log("Waiting for fillers to finish")
             const res = await Promise.all(fillers)
           
         }
