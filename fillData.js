@@ -17,7 +17,7 @@ class CSVQueryGenerator extends QueryGeneratorStrategy{
 
     async execute() {
         return new Promise((res, rej) => {
-            const buffer = [ 'SPARQL INSERT DATA IN GRAPH <http://localhosted/custom> {' ]
+            const buffer = [ 'SPARQL INSERT DATA IN GRAPH <http://localhost> {' ]
             this.fileHandler.createReadStream()
                 .pipe(parse({
                 delimiter: ', ',

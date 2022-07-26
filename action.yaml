@@ -6,18 +6,26 @@ branding:
 description: 'Spawn a virtuoso instace and fill it with data!'
 
 inputs:
-  dba_password:
-    description: 'ENV variable DBA_PASSWORD'
+  dba-password:
+    description: 'ENV variable DBA_PASSWORD. Default: password'
     required: false
     default: 'password'
-  dav_password:
-    description: 'ENV variable DAV_PASSWORD'
+  dav-password:
+    description: 'ENV variable DAV_PASSWORD. Default: password'
     required: false
     default: 'password'
   triples:
     description: 'Files and and directories to import triples from, supports CSV'
     required: false
-    default: '' # TBD, maybe ?
+    default: ''
+  publish-db-port:
+    description: "Publish database's port to host. Default: 1111"
+    required: false
+    default: '1111'
+  publish-http-server-port:
+    description: "Publish HTTP server's port to host, and thus the endpoint /sparql. Default: 8890"
+    required: false
+    default: '8890'
 
 runs:
   using: 'node16'

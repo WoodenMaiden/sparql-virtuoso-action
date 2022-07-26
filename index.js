@@ -27,9 +27,11 @@ async function bootstrap() {
     "use strict"
 
     try {
-        const dba_password = core.getInput('dba_password');
-        const dav_password = core.getInput('dav_password');
+        const dba_password = core.getInput('dba-password');
+        const dav_password = core.getInput('dav-password');
         const triplesInput = core.getInput('triples');
+        const dbPort = core.getInput('publish-db-port');
+        const srvPort = core.getInput('publish-http-server-port')
         
         const docker = new Dockerode()
         
@@ -47,10 +49,10 @@ async function bootstrap() {
             HostConfig: {
                 PortBindings: {
                     "8890/tcp": [{
-                        HostPort: "8890"
+                        HostPort: dbPort
                     }],
                     "1111/tcp": [{
-                        HostPort: "1111"
+                        HostPort: srvPort
                     }]
                 }
             }
@@ -66,18 +68,19 @@ async function bootstrap() {
             const files = triplesInput.split(' ');
             const fillers = []
 
-            for(let i = 0; i < files.length; ++i) {
-                try {
+            try {
+                for(let i = 0; i < files.length; ++i) {
                     const fileHandler = await fsp.open(files[i], 'r')
                     fillers.push(new Filler(fileHandler).sendData(container))
-                } catch(e) {
-                    console.log(e)
+
+                    console.log("Waiting for fillers to finish")
+                    const res = await Promise.all(fillers)
+                    console.log("finished everything!!!");
+                    return;   
                 }
+            } catch(e) {
+                core.setFailed("could not open file, details: " + e);
             }
-            console.log("Waiting for fillers to finish")
-            const res = await Promise.all(fillers)
-            console.log("finished everything!!!");
-            return;
           
         }
         else console.log('No files provided')
