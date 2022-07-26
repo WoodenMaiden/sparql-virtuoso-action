@@ -1,4 +1,3 @@
-const fs = require('fs');
 const fsp = require('fs/promises');
 
 const core = require('@actions/core');
@@ -24,7 +23,7 @@ function waitForVirtuosoInit(stream) {
     });
   }
 
-(async function bootstrap() {
+async function bootstrap() {
     "use strict"
 
     try {
@@ -34,21 +33,16 @@ function waitForVirtuosoInit(stream) {
         
         const docker = new Dockerode()
         
-        try { // let's try to stop the container just in case...
-            await docker.getContainer("virtuosoaction").stop()
-        } catch (e) {
-            console.log("No container")
-        }
-        
         await docker.pruneImages()
         await docker.pruneContainers()
         
         const container = await docker.createContainer({
-            name: "virtuosoaction", 
             Env: [`DBA_PASSWORD=${dba_password}`, `DAV_PASSWORD=${dav_password}`],
             Image: "openlink/virtuoso-opensource-7",
             Tty: false,
             AttachStdout: true,
+            Detach: true,
+            OpenStdin: true,
             Cmd: ['start'],
             HostConfig: {
                 PortBindings: {
@@ -62,8 +56,11 @@ function waitForVirtuosoInit(stream) {
             }
         })
         await container.start()
+
         const stream = await container.attach({stream: true, stdout: true, stderr: true})
         await waitForVirtuosoInit(stream)
+        stream.destroy('') //streams prevent program from stopping so we destroy them
+        
 
         if (triplesInput && triplesInput.length !== 0) {
             const files = triplesInput.split(' ');
@@ -79,6 +76,8 @@ function waitForVirtuosoInit(stream) {
             }
             console.log("Waiting for fillers to finish")
             const res = await Promise.all(fillers)
+            console.log("finished everything!!!");
+            return;
           
         }
         else console.log('No files provided')
@@ -87,4 +86,6 @@ function waitForVirtuosoInit(stream) {
         core.setFailed(error);
     }
 
-})()
+}
+
+bootstrap()

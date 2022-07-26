@@ -17,24 +17,25 @@ class CSVQueryGenerator extends QueryGeneratorStrategy{
 
     async execute() {
         return new Promise((res, rej) => {
-            const buffer = [ 'SPARQL INSERT DATA IN GRAPH <http://localhost/> {' ]
+            const buffer = [ 'SPARQL INSERT DATA IN GRAPH <http://localhosted/custom> {' ]
             this.fileHandler.createReadStream()
                 .pipe(parse({
                 delimiter: ', ',
                 encoding: 'utf-8' 
             }))
             .on('data', (data) => {  
-                buffer.push(
-                    `<${data[0]}> <${data[1]}> ${
-                        (data[2].match(QueryGeneratorStrategy.REGEX))? `<${data[2]}>`: `'${data[2]}'`
-                    }.`
-                )
+                let toPush = `<${data[0]}> <${data[1]}> `
+                if (data[2].match(QueryGeneratorStrategy.REGEX)) toPush += `<${data[2]}>`
+                else toPush += (data[2].indexOf(`'`) === -1)? `'${data[2]}'`: `"${data[2]}"`
+                toPush += '.\n'
+                
+                buffer.push(toPush)
             })
             .on('error', (error) => {
                 rej(error)
             })
             .on('end', () => {
-                res(buffer.join('\n') + "}")
+                res(buffer.join('') + "};\n")
             })
         })
     }    
@@ -98,8 +99,22 @@ module.exports = class Fill {
         this.strategy = new CSVQueryGenerator(fileHandler)
     }
 
-    sendData = async (container) => {
+    async sendData (container) {
+
         const query = await this.strategy.execute()
+        const filename = `${Date.now()}.sql`
+
+        const createfile = await container.exec({
+            Cmd: ["tee", filename],
+            Detach: false,
+            AttachStdout: false,
+            AttachStderr: false,
+            AttachStdin: true,
+        }) 
+        const create = await createfile.start({hijack: true, stdin: true})
+        container.modem.demuxStream(create, process.stdout, process.stderr)
+        create.write(query)
+
 
         let dba_pwd = await container.inspect()
         dba_pwd = dba_pwd.Config.Env
@@ -107,20 +122,16 @@ module.exports = class Fill {
         dba_pwd = dba_pwd.slice(dba_pwd.indexOf('=') + 1) //get value
                
         const exec = await container.exec({
-            Cmd: ["/opt/virtuoso-opensource/bin/isql", `1111`, 'dba', `${dba_pwd}`, `EXEC=${query}`],
+            Cmd: ["isql", `1111`, 'dba', `${dba_pwd}`, `${filename}`],
             AttachStdout: true,
-            AttachStderr: true
-        }) // error : 
-        
-        // OpenLink Virtuoso Interactive SQL (Virtuoso)
-        // Version 07.20.3234 as of May 18 2022
-        // Type HELP; for help and EXIT; to exit.
-
-        // *** Error S2801: [Virtuoso Driver]CL033: Connect failed to 1111 = 1111.
-        // at line 0 of Top-Level:
-
+            AttachStderr: true,
+            Detach: false,
+        })
         const strm = await exec.start({hijack: true})
         
         container.modem.demuxStream(strm, process.stdout, process.stderr)
+
+        create.destroy('')
+        strm.destroy('')
     }
 }
