@@ -1,4 +1,7 @@
-const parse = require('csv-parse').parse;
+const uuidv4 = require("crypto").randomUUID
+
+const CSVParse = require('csv-parse').parse;
+const RDFParser = require('rdf-parse').default
 
 class QueryGeneratorStrategy {
     static REGEX = /(?<protocol>(?:[^:]+)s?)?:\/\/(?:(?<user>[^:\n\r]+):(?<pass>[^@\n\r]+)@)?(?<host>(?:www\.)?(?:[^:\/\n\r]+))(?::(?<port>\d+))?\/?(?<request>[^?#\n\r]+)?\??(?<query>[^#\n\r]*)?\#?(?<anchor>[^\n\r]*)?/m
@@ -17,9 +20,9 @@ class CSVQueryGenerator extends QueryGeneratorStrategy{
 
     async execute() {
         return new Promise((res, rej) => {
-            const buffer = [ 'SPARQL INSERT DATA IN GRAPH <http://localhost> {' ]
+            const buffer = [ 'SPARQL INSERT DATA IN GRAPH <http://localhost/data> {' ]
             this.fileHandler.createReadStream()
-                .pipe(parse({
+                .pipe(CSVParse({
                 delimiter: ', ',
                 encoding: 'utf-8' 
             }))
@@ -43,15 +46,22 @@ class CSVQueryGenerator extends QueryGeneratorStrategy{
 
 class TurtleQueryGenerator extends QueryGeneratorStrategy{
     constructor(fileHandler){ 
-        throw new Error('Not yet implemented')
         super()
         this.fileHandler = fileHandler
     }
 
     async execute() {
-        throw new Error('Not yet implemented')
-        
-        return 'someQuerytoInject'
+        return new Promise((res, rej) => {
+            let buffer = ""
+            RDFParser.parse(this.fileHandler.createReadStream(), {contentType: 'text/turtle'})
+            .on('data', (quad) => buffer += `SPARQL INSERT DATA IN GRAPH \
+${(quad._graph.id === '')? '<http://localhost/data>': `<${quad._graph.id}>`} {\
+<${quad._subject.id}> <${quad._predicate.id}> \
+${(quad._object.id.startsWith('"') && quad._object.id.startsWith('"'))? quad._object.id : `<${quad._object.id}>`}.\
+};\n`)
+            .on('error', (err) => rej(err))
+            .on('end', () => res(buffer + "\n"))
+        })
     }    
 }
 
@@ -90,19 +100,33 @@ class JSONLDQueryGenerator extends QueryGeneratorStrategy{
 module.exports = class Fill {
     static fileExtentions = new Map ([
         [".csv", CSVQueryGenerator],
+        
         [".ttl", TurtleQueryGenerator],
+        [".turtle", TurtleQueryGenerator],
+
         [".rdf", RDFXMLQueryGenerator],
-        [".jsonld", JSONLDQueryGenerator]
+        [".rdfxml", RDFXMLQueryGenerator],
+        [".owl", RDFXMLQueryGenerator],
+        
+        [".jsonld", JSONLDQueryGenerator],
+        [".json", JSONLDQueryGenerator]
     ])
 
-    constructor (fileHandler) {
-        this.strategy = new CSVQueryGenerator(fileHandler)
+
+    constructor (filePath, fileHandler) {
+        const gen = Fill.fileExtentions.get(
+            filePath.slice(filePath.lastIndexOf('.'))
+        )
+        
+        if (!gen) throw new Error(`File type not supportted! ${filePath}`)
+        
+        this.strategy = new gen(fileHandler)
     }
 
     async sendData (container) {
 
         const query = await this.strategy.execute()
-        const filename = `${Date.now()}.sql`
+        const filename = `${uuidv4()}.sql`
 
         const createfile = await container.exec({
             Cmd: ["tee", filename],
@@ -122,7 +146,7 @@ module.exports = class Fill {
         dba_pwd = dba_pwd.slice(dba_pwd.indexOf('=') + 1) //get value
                
         const exec = await container.exec({
-            Cmd: ["isql", `1111`, 'dba', `${dba_pwd}`, `${filename}`],
+            Cmd: ['/bin/bash', '-c', `isql 1111 dba ${dba_pwd} ${filename} && rm ${filename}`],
             AttachStdout: true,
             AttachStderr: true,
             Detach: false,

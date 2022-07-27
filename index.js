@@ -39,7 +39,13 @@ async function bootstrap() {
         await docker.pruneContainers()
         
         const container = await docker.createContainer({
-            Env: [`DBA_PASSWORD=${dba_password}`, `DAV_PASSWORD=${dav_password}`],
+            Env: [
+                `DBA_PASSWORD=${dba_password}`,
+                `DAV_PASSWORD=${dav_password}`,
+                
+                //virtuoso.ini
+                `VIRT_SPARQL_DEFAULTGRAPH=http://localhost/data`
+            ],
             Image: "openlink/virtuoso-opensource-7",
             Tty: false,
             AttachStdout: true,
@@ -71,15 +77,15 @@ async function bootstrap() {
             try {
                 for(let i = 0; i < files.length; ++i) {
                     const fileHandler = await fsp.open(files[i], 'r')
-                    fillers.push(new Filler(fileHandler).sendData(container))
-
-                    console.log("Waiting for fillers to finish")
-                    const res = await Promise.all(fillers)
-                    console.log("finished everything!!!");
-                    return;   
+                    fillers.push(new Filler(files[i], fileHandler).sendData(container)) 
                 }
+                
+                console.log("Waiting for fillers to finish")
+                await Promise.all(fillers)
+                console.log("finished everything!!!");
+                return;
             } catch(e) {
-                core.setFailed("could not open file, details: " + e);
+                core.setFailed("Error when importing data from file, details: " + e);
             }
           
         }
