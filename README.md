@@ -4,37 +4,64 @@
 
 ## Description
 
-This action allows you to spawn an instance of virtuoso and to import any RDF triples from several files.
+This action allows you to spawn an instance of virtuoso inside a container and import any RDF triples from several files. The created container will continue running after the action so you can run tests on it for instance.
+
+The default graph is ``http://localhost/data``
 
 The supported filetypes are: 
-- CSV
+- CSV (stored in the default graph)
+- Turtle
 - More to come
 
 ## Usage
 | Name | Default value | Description | Types | Required |
 |------|---------------|-------------|-------|----------|
-| ``dba_password`` | ``password`` | Environment variable DBA_PASSWORD | string | :x: | 
-| ``dav_password`` | ``password``| Environment variable DAV_PASSWORD | string | :x: |
-| ``triples`` | | Files to load triples from | string[] | :x: |
+| ``dba-password`` | ``password`` | Environment variable DBA_PASSWORD | string | :x: | 
+| ``dav-password`` | ``password``| Environment variable DAV_PASSWORD | string | :x: |
+| ``triples`` | ``''``| Files to load triples from, separated by spaces | string | :x: |
+| ``publish-db-port`` | ``1111`` | Publish database's port to host | string/integer | :x: |
+| ``publish-http-server-port`` | ``8890`` | Publish HTTP server's port to host, and thus the endpoint /sparql | string/integer | :x: |
+
+
+## An example
 ```yaml
+name: Node.js CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
 jobs:
-  somejob:
+  setup:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout 
+    - name: Clone repo 
       uses: actions/checkout@v3
 
-    - name: Create virtuoso instance
-      uses: actions/sparql-virtuoso-action@beta1.0.0
+    - name: Create a virtuoso instance
+      uses: WoodenMaiden/sparql-virtuoso-action@beta1.0.0
       with:
-        dba_password: 'password'
-        dav_password: 'password'
-        triples: 'somefile'
-```
+        dba-password: someReallySecurePassword
+        dav-password: someReallySecurePassword
+        triples: 
+          music.rdf
+          metal_bands.ttl
+        publish-db-port: 2222
+        publish-http-server-port: 9999
+        
 
-## TODO
-- [ ] CSV: Find a way to avoid cutting short objects when they have a comma
-- [ ] Support Turtle format 
-- [x] Complete action metadata file
-- [ ] Add workflow commands 
+    - uses: actions/checkout@v3
+    - name: Use Node.js 16.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+        cache: 'npm'
+    - run: npm i
+    - run: npm run build --if-present
+    - run: npm test
+  
+...
+```
