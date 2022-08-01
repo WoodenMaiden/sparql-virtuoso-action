@@ -5,6 +5,8 @@ const Dockerode = require("dockerode");
 
 const Filler = require('./fillData');
 
+const docker = new Dockerode()
+const imgName = "openlink/virtuoso-opensource-7"
 
 // watches the container stdout and wait for the ready string to be printed
 function waitForVirtuosoInit(stream) {
@@ -21,7 +23,28 @@ function waitForVirtuosoInit(stream) {
             resolve();
         })
     });
-  }
+}
+
+// wait for pulling to stop
+// https://github.com/apocas/dockerode/issues/357#issuecomment-294511810
+function pull () {
+    return new Promise((res, rej) => {
+        docker.pull(imgName, {
+           "disable-content-trust":"false",
+        }, (err, stream) => {
+            if (err) rej(err)
+            docker.modem.followProgress(
+                stream,
+                (err, output) => { // on finish
+                    console.log("Finished pulling image")
+                    res()
+                },
+                (event) => {
+                }// on progress
+            )
+        })
+    })
+};
 
 async function bootstrap() {
     "use strict"
@@ -33,11 +56,8 @@ async function bootstrap() {
         const dbPort = core.getInput('publish-db-port');
         const srvPort = core.getInput('publish-http-server-port')
         
-        const docker = new Dockerode()
-        
-        await docker.pruneImages()
-        await docker.pruneContainers()
-        
+        await pull()        
+
         const container = await docker.createContainer({
             Env: [
                 `DBA_PASSWORD=${dba_password}`,
@@ -46,7 +66,7 @@ async function bootstrap() {
                 //virtuoso.ini
                 `VIRT_SPARQL_DEFAULTGRAPH=http://localhost/data`
             ],
-            Image: "openlink/virtuoso-opensource-7",
+            Image: "docker.io/" + imgName,
             Tty: false,
             AttachStdout: true,
             Detach: true,
@@ -55,10 +75,10 @@ async function bootstrap() {
             HostConfig: {
                 PortBindings: {
                     "8890/tcp": [{
-                        HostPort: dbPort
+                        HostPort: `${srvPort}`
                     }],
                     "1111/tcp": [{
-                        HostPort: srvPort
+                        HostPort: `${dbPort}`
                     }]
                 }
             }
