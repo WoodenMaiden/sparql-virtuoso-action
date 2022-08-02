@@ -1,8 +1,8 @@
 #use this alongside act to test the cd locally
 name: Release
+
 on:
   push:
-    branches: [ master, cicd ]
     tags: 
       - release[0-9]+.[0-9]+.[0-9]+
 
@@ -28,16 +28,19 @@ jobs:
           const with_v = tag.replace('release', 'v')
           core.setOutput('with_v', with_v)
 
-    - name: Git Auto Commit
+    - name: Remove local tag ${{github.ref_name}}
+      run: git tag -d ${{github.ref_name}}
+
+    - name: Commit release 
       uses: stefanzweifel/git-auto-commit-action@v4.14.1
       id: git_commit
       with:
-        branch: master
-        file_pattern: ./dist*
-        commit_message: git commit -sm ${{ steps.set_version.outputs.with_v }}" [skip ci]"
+        branch: refs/heads/releases
+        file_pattern: ./dist/*
+        skip_checkout: true
+        create_branch: true
+        commit_message: 'release(automated): ${{ steps.set_version.outputs.with_v }} [skip ci]'
         commit_author: WoodenMaiden <yann.pomie@laposte.net>
         commit_user_name: Action (automated)
         commit_user_email: yann.pomie@laposte.net
         tagging_message: ${{ steps.set_version.outputs.with_v }}
-
-    - run : git log --oneline ${{ steps.git_commit.outputs.commit_hash }} | cat
