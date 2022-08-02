@@ -2,9 +2,11 @@
   "name": "virtuoso-sparl-action",
   "version": "1.0.0",
   "description": ":exclamation: Since this is a WIP, it is not a stable action, use it with caution",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "ncc build index.js --minify",
+    "watch": "ncc build index.js --watch --minify"
   },
   "repository": {
     "type": "git",
@@ -23,5 +25,8 @@
     "csv-parse": "^5.1.0",
     "dockerode": "^3.3.2",
     "rdf-parse": "^2.1.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.34.0"
   }
 }
