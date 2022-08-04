@@ -55,7 +55,7 @@ class TurtleQueryGenerator extends QueryGeneratorStrategy{
             let buffer = ""
             RDFParser.parse(this.fileHandler.createReadStream(), {contentType: 'text/turtle'})
             .on('data', (quad) => {if (quad._graph.id) console.log(quad)})
-            .on('data', (quad) => buffer += `SPARQL INSERT DATA IN GRAPH' <http://localhost/data>'{\
+            .on('data', (quad) => buffer += `SPARQL INSERT DATA IN GRAPH <http://localhost/data>{\
 <${quad._subject.id}> <${quad._predicate.id}> \
 ${(quad._object.id.startsWith('"') && quad._object.id.startsWith('"'))? quad._object.id : `<${quad._object.id}>`}.\
 };\n`)
