@@ -65,13 +65,3 @@ jobs:
   
 ...
 ```
-
-##  Branches
-
-``master``: this is the branch where stabke code and PRs are merged/pushed into (you can test the action by running [act](https://github.com/nektos/act) while being inside repo's directory)
-
-``releases``: this is a branch where the action will be  build and tagged for the marketplace by the CD
-
-## Tags
-
-``releaseX.X.X``: if tagged on master, the CD will build the app push it to the ``release`` branch and tag it as ``vX.X.X``. This v tag will be the one released on the marketplace.
