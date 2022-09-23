@@ -5,8 +5,9 @@
   "main": "./dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "ncc build index.js --minify",
-    "watch": "ncc build index.js --watch --minify"
+    "build": "npx ncc build index.js --minify",
+    "watch": "npx ncc build index.js --watch --minify",
+    "release": "npm run build && git commit -as && echo '\\e[36mCode and dist directory has been commited, now run: \ngit tag vx.x.x && git push origin master --follow-tags\\e[0m'"
   },
   "repository": {
     "type": "git",

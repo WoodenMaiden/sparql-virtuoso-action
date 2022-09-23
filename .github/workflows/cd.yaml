@@ -1,10 +1,9 @@
-#use this alongside act to test the cd locally
 name: Release
 
 on:
   push:
     tags: 
-      - release[0-9]+.[0-9]+.[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+
 
 jobs:
   deploy:
@@ -18,29 +17,9 @@ jobs:
     - run: npm i
     - run: npm run build
 
-    - name: Set Versions
-      uses: actions/github-script@v4
-      id: set_version
+    - name: Publish to Marketplace
+      uses: ncipollo/release-action@v1.10.0
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const tag = context.ref.substring(10)
-          const with_v = tag.replace('release', 'v')
-          core.setOutput('with_v', with_v)
-
-    - name: Remove local tag ${{github.ref_name}}
-      run: git tag -d ${{github.ref_name}}
-
-    - name: Commit release 
-      uses: stefanzweifel/git-auto-commit-action@v4.14.1
-      id: git_commit
-      with:
-        branch: refs/heads/releases
-        file_pattern: ./dist/*
-        skip_checkout: true
-        create_branch: true
-        commit_message: 'release(automated): ${{ steps.set_version.outputs.with_v }} [skip ci]'
-        commit_author: WoodenMaiden <yann.pomie@laposte.net>
-        commit_user_name: Action (automated)
-        commit_user_email: yann.pomie@laposte.net
-        tagging_message: ${{ steps.set_version.outputs.with_v }}
+        name: Sparql Virtuoso action ${{ github.ref_name }}
+        tag:  ${{ github.ref_name }}
+        omitBody: true
