@@ -50,11 +50,11 @@ async function bootstrap() {
     "use strict"
 
     try {
-        const dba_password = core.getInput('dba-password');
-        const dav_password = core.getInput('dav-password');
-        const triplesInput = core.getInput('triples');
-        const dbPort = core.getInput('publish-db-port');
-        const srvPort = core.getInput('publish-http-server-port')
+        const dba_password = core.getInput('dba-password') || "password";
+        const dav_password = core.getInput('dav-password') || "password";
+        const triplesInput = core.getInput('triples') || "./test_dataset.owl";
+        const dbPort = core.getInput('publish-db-port') || 2222;
+        const srvPort = core.getInput('publish-http-server-port') || 8888;
         
         await pull()        
 

@@ -25,4 +25,4 @@ jobs:
         dav-password: PASSWORD
         publish-db-port: 2222
         publish-http-server-port: 8888
-        triples: ./test_dataset.ttl
+        triples: ./Arpenteur.owl ./test_dataset.ttl 

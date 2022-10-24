@@ -53,7 +53,7 @@ class TurtleQueryGenerator extends QueryGeneratorStrategy{
     async execute() {
         return new Promise((res, rej) => {
             let buffer = ""
-            RDFParser.parse(this.fileHandler.createReadStream(), {contentType: 'text/turtle'})
+            RDFParser.parse(this.fileHandler.createReadStream(), { contentType: 'text/turtle'})
             .on('data', (quad) => {if (quad._graph.id) console.log(quad)})
             .on('data', (quad) => buffer += `SPARQL INSERT DATA IN GRAPH <http://localhost/data>{\
 <${quad._subject.id}> <${quad._predicate.id}> \
@@ -68,15 +68,22 @@ ${(quad._object.id.startsWith('"') && quad._object.id.startsWith('"'))? quad._ob
 
 class RDFXMLQueryGenerator extends QueryGeneratorStrategy{
     constructor(fileHandler){ 
-        throw new Error('Not yet implemented')
         super()
         this.fileHandler = fileHandler
     }
 
     async execute() {
-        throw new Error('Not yet implemented')        
-
-        return 'someQuerytoInject'
+        return new Promise((res, rej) => {
+            let buffer = ""
+            RDFParser.parse(this.fileHandler.createReadStream(), { contentType: 'application/rdf+xml' })
+            .on('data', (quad) => buffer += `SPARQL INSERT DATA IN GRAPH \
+<${(quad.graph.termType == 'DefaultGraph')? 'http://localhost/data': quad.graph.value}>{\
+<${quad.subject.value}> <${quad.predicate.value}> \
+${(quad.object.termType == 'Literal')? quad.object.value : `<${quad.object.value}>`}.\
+};\n`)
+            .on('error', (err) => rej(err))
+            .on('end', () => res(buffer + "\n"))
+        })
     }    
 }
 
