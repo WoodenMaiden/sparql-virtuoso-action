@@ -1,4 +1,6 @@
 const fsp = require('fs/promises');
+const fs = require('fs');
+const Path = require("path");
 
 const core = require('@actions/core');
 const Dockerode = require("dockerode");
@@ -22,6 +24,16 @@ function waitForVirtuosoInit(stream) {
             console.log("Ended!")          
             resolve();
         })
+    });
+}
+
+// if a file is a directory 
+let Files = [];
+function throughDirectory(directory) {
+    fs.readdirSync(directory).forEach(File => {
+        const Absolute = Path.join(directory, File);
+        if (fs.statSync(Absolute).isDirectory()) return throughDirectory(Absolute);
+        else return Files.push(Absolute);
     });
 }
 
@@ -49,12 +61,12 @@ function pull () {
 async function bootstrap() {
     "use strict"
 
-    try {
+    try {     
+        const triplesInput = core.getInput('triples');
         const dba_password = core.getInput('dba-password');
         const dav_password = core.getInput('dav-password');
-        const triplesInput = core.getInput('triples');
         const dbPort = core.getInput('publish-db-port');
-        const srvPort = core.getInput('publish-http-server-port')
+        const srvPort = core.getInput('publish-http-server-port');
         
         await pull()        
 
@@ -91,7 +103,19 @@ async function bootstrap() {
         
 
         if (triplesInput && triplesInput.length !== 0) {
-            const files = triplesInput.split(' ');
+            let files = triplesInput.split(' ').map(f => Path.join(process.cwd(), f));
+            
+            const directories = files.filter(filename => fs.statSync(filename).isDirectory());
+            
+            if (directories.length > 0) {
+                //fill Files array 
+                directories.forEach(d => throughDirectory(d))
+                files = files.filter(filename => !directories.includes(filename)).concat(Files)
+                files = files.sort().filter((filename, index, OG) => OG.lastIndexOf(filename) == index) // keep uniq files just in case
+            }
+
+            console.log("datasets to be inserted:", files)
+
             const fillers = []
 
             try {
