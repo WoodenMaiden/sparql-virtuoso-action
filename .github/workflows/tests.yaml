@@ -2,7 +2,8 @@
 name: Tests
 on:
   push:
-    branches: [ master ]
+    branches: 
+    - "*"
 
 jobs:
   test:
@@ -25,4 +26,4 @@ jobs:
         dav-password: PASSWORD
         publish-db-port: 2222
         publish-http-server-port: 8888
-        triples: ./Arpenteur.owl ./test_dataset.ttl 
+        triples: ./test_datafiles
